@@ -1,73 +1,149 @@
-# Welcome to your Lovable project
+# 🎓 Somaiya Result Automation System
 
-## Project info
+An automated result management system for Somaiya Polytechnic that allows teachers to search, view, analyze, and manage student results without manually entering enrollment numbers or solving captchas. The system is designed to save time, improve accuracy, and provide useful analytics for academic performance.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## ✨ Features
 
-There are several ways of editing your application.
+- 🔍 Search student results quickly
+- 🤖 Automated result fetching
+- 🚫 No manual enrollment number entry
+- 🚫 No captcha solving
+- 📄 View and download marksheets
+- 🏆 Student ranking system
+- 📊 Result analytics and statistics
+- 👨‍🏫 Teacher dashboard
+- 📁 Secure result management
+- 📈 Performance reports
+- 💻 Responsive and modern user interface
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🛠️ Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend
+- React
+- TypeScript
+- Tailwind CSS
+- Vite
 
-**Use your preferred IDE**
+### Backend
+- Python
+- FastAPI
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Database
+- SQLite (Development)
+- PostgreSQL (Future)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Automation
+- Selenium
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 📂 Project Structure
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```
+Collage-Result-Automation-System/
+│
+├── src/              # React Frontend
+├── backend/               # FastAPI Backend
+├── screenshots/           # Project Images
+├── README.md
+├── LICENSE
+└── .gitignore
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## 🚀 Installation
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/SufiyanSheikh777/Collage-Result-Automation-System.git
+```
+
+### Navigate to the Project
+
+```bash
+cd Collage - RESULT AUTOMATION SYSTEM
+```
+
+### Backend Setup
+
+```bash
+cd backend
+python -m venv venv
+```
+
+Activate the virtual environment.
+
+**Windows**
+
+```bash
+venv\Scripts\activate
+```
+
+Install dependencies.
+
+```bash
+pip install -r requirements.txt
+```
+
+Start the backend server.
+
+```bash
+python app.py
+```
+
+### Frontend Setup
+
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🗺️ Roadmap
 
-**Use GitHub Codespaces**
+- [ ] Teacher Authentication
+- [ ] Student Result Search
+- [ ] Automatic Result Fetching
+- [ ] Marksheet Viewer
+- [ ] PDF Download
+- [ ] Student Ranking
+- [ ] Analytics Dashboard
+- [ ] Result History
+- [ ] Export Reports
+- [ ] Dark Mode
+- [ ] Mobile Responsive Design
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🤝 Contributing
 
-This project is built with:
+Contributions, suggestions, and improvements are welcome.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push the branch
+5. Open a Pull Request
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 👨‍💻 Author
 
-## Can I connect a custom domain to my Lovable project?
+**Sufiyan Sirajuddin Sheikh**
 
-Yes, you can!
+Web Developer | Automation Obsessed
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+GitHub: https://github.com/SufiyanSheikh777
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## ⭐ Support
+
+If you find this project helpful, please consider giving it a ⭐ on GitHub.
