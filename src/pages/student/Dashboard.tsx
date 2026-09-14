@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext'; 
 import { useNavigate } from 'react-router-dom'; 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { saveAs } from 'file-saver';
 import { 
   GraduationCap, 
   FileText, 
@@ -10,7 +12,10 @@ import {
   LogOut,
   CheckCircle,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Search,
+  ArrowLeft,
+  Eye
 } from 'lucide-react';
 import MarksheetTable from '@/components/MarksheetTable';
 import StatCard from '@/components/StatCard';
@@ -23,14 +28,12 @@ interface User {
 }
 
 const StudentDashboard: React.FC = () => {
-  const { user, logout } = (useAuth() as unknown) as { 
-    user: User | null; 
-    logout: () => void 
-  };
+  const { user, activeCollege, logout } = useAuth();
   
   const navigate = useNavigate(); 
   const [studentResult, setStudentResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [lookupEnroll, setLookupEnroll] = useState('');
 
   // Helper function for Letter Grades (A, B, C, D, F) - KEPT EXACTLY SAME
 const getLetterGrade = (pct: string) => {
@@ -43,22 +46,27 @@ const getLetterGrade = (pct: string) => {
   return "F";
 };
 
-useEffect(() => {
-  const fetchRealData = async () => {
-    if (!user?.enrollment) return;
+  const currentEnrollment = (user?.enrollment || (user as any)?.enrollmentNumber || localStorage.getItem('userEnrollment') || '').trim();
+
+  const fetchRealData = async (targetEnroll = currentEnrollment) => {
+    if (!targetEnroll) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
-      const response = await fetch(`http://127.0.0.1:5000/get_student_marks?enroll=${user.enrollment}`);
+      const response = await fetch(`/get_student_marks?enroll=${encodeURIComponent(targetEnroll)}`);
       const data = await response.json();
       
-      if (response.ok) {
-        // NEW INTERNAL HELPER: To fix "00-" problem without changing logic
+      if (response.ok && data && (data.student_name || data.enroll)) {
+        // Helper to fix "00-" or empty placeholders
         const fv = (v: any) => {
           const s = String(v || "").trim();
           return (s === "00-" || s === "0-" || s === "00" || s === "0" || s === "") ? "-" : v;
         };
 
         // MAP SUBJECTS: Apply cleaning to the marks table data
-        const cleanedSubjects = data.subjects.map((s: any) => ({
+        const cleanedSubjects = (data.subjects || []).map((s: any) => ({
           ...s,
           theory: {
             faTh: { max: fv(s.theory?.faTh?.max), obt: fv(s.theory?.faTh?.obt) },
@@ -72,36 +80,56 @@ useEffect(() => {
           sla: { max: fv(s.sla?.max), obt: fv(s.sla?.obt) }
         }));
 
+        const rawPct = data.percentage !== undefined && data.percentage !== null && data.percentage !== "N/A" ? String(data.percentage) : "0";
+
         setStudentResult({
-          studentName: data.student_name,
-          enrollment: data.enroll,
-          seatNumber: fv(data.seat_no || data.seat), // Updated with fv()
-          course: data.course,
-          semester: data.semester,
-          percentage: data.percentage,
-          result: data.status,
-          obtainedMarks: fv(data.total_marks_obtained), // Updated with fv()
-          totalMarks: fv(data.total_max_marks),         // Updated with fv()
-          subjects: cleanedSubjects,                    // Using cleaned array
-          cgpa: (parseFloat(data.percentage) / 9.5).toFixed(2),
-          grade: getLetterGrade(data.percentage)
+          studentName: data.student_name || "Student",
+          enrollment: data.enroll || targetEnroll,
+          seatNumber: fv(data.seat_no || data.seat),
+          course: data.course || "Diploma Engineering",
+          semester: data.semester || 6,
+          percentage: rawPct,
+          result: data.status || "Pass",
+          obtainedMarks: fv(data.total_marks_obtained),
+          totalMarks: fv(data.total_max_marks),
+          subjects: cleanedSubjects,
+          cgpa: (parseFloat(rawPct) / 9.5).toFixed(2),
+          grade: getLetterGrade(rawPct)
         });
+      } else {
+        setStudentResult(null);
       }
     } catch (err) {
       console.error("Failed to fetch marks:", err);
+      setStudentResult(null);
     } finally {
       setLoading(false);
     }
   };
-  fetchRealData();
-}, [user]);
+
+  useEffect(() => {
+    fetchRealData();
+  }, [user]);
 
   const handleLogout = () => {
     logout();
-    navigate('/', { replace: true });
+    navigate('/auth', { replace: true });
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
+    const enrollForPdf = studentResult?.enrollment || currentEnrollment;
+    if (enrollForPdf) {
+      try {
+        const response = await fetch(`/download_pdf/${enrollForPdf}`);
+        if (response.ok) {
+          const blob = await response.blob();
+          saveAs(blob, `MSBTE_Marksheet_${enrollForPdf}.pdf`);
+          return;
+        }
+      } catch (e) {
+        console.warn("Direct PDF download error, using print:", e);
+      }
+    }
     window.print();
   };
 
@@ -116,10 +144,56 @@ useEffect(() => {
 
   if (!studentResult) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 p-4 text-center">
-        <AlertCircle className="w-12 h-12 text-muted-foreground" />
-        <p className="text-lg font-medium text-foreground">No result data found</p>
-        <Button onClick={() => window.location.reload()} variant="outline">Try Refreshing</Button>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 animate-fade-in">
+        <div className="w-full max-w-md bg-card rounded-2xl border border-border p-6 sm:p-8 shadow-card text-center space-y-5">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+
+          <div>
+            <h2 className="text-xl font-heading font-bold text-foreground">Marksheet Not Loaded</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              {currentEnrollment 
+                ? `No MSBTE records found for enrollment "${currentEnrollment}".` 
+                : 'No enrollment number is associated with this session.'}
+            </p>
+          </div>
+
+          <div className="space-y-2 text-left pt-2 border-t border-border">
+            <label className="text-xs font-semibold text-foreground">Lookup Enrollment Number</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. 23314740173"
+                value={lookupEnroll}
+                onChange={(e) => setLookupEnroll(e.target.value)}
+                className="font-mono text-xs sm:text-sm"
+              />
+              <Button 
+                onClick={() => fetchRealData(lookupEnroll.trim())}
+                disabled={!lookupEnroll.trim()}
+                className="gradient-primary text-primary-foreground font-semibold shrink-0 text-xs sm:text-sm px-4"
+              >
+                Search
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-2 border-t border-border">
+            {currentEnrollment && (
+              <Button onClick={() => fetchRealData(currentEnrollment)} variant="outline" size="sm" className="w-full text-xs">
+                Retry Current Enrollment ({currentEnrollment})
+              </Button>
+            )}
+            <div className="flex items-center gap-2">
+              <Button onClick={handleLogout} variant="secondary" size="sm" className="flex-1 text-xs">
+                Switch Role / Sign Out
+              </Button>
+              <Button onClick={() => navigate('/')} variant="ghost" size="sm" className="flex-1 text-xs">
+                Home
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -154,8 +228,10 @@ useEffect(() => {
               <GraduationCap className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-heading font-bold text-foreground">Somayya Polytechnic</h1>
-              <p className="text-xs text-muted-foreground">Student Portal</p>
+              <h1 className="font-heading font-bold text-foreground">College Result Automation System</h1>
+              <p className="text-xs text-muted-foreground">
+                Student Result Portal
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -176,7 +252,7 @@ useEffect(() => {
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
              <div>
                <h1 style={{ fontSize: '20px', fontWeight: 'bold' }}>OFFICIAL STATEMENT OF MARKS</h1>
-               <p style={{ fontSize: '14px' }}>Somayya Polytechnic Academic Portal</p>
+               <p style={{ fontSize: '14px' }}>{activeCollege?.name || 'Result Automation System'} Academic Portal</p>
              </div>
              <div style={{ textAlign: 'right', fontSize: '14px' }}>
                <p><strong>Full Name:</strong> {studentResult.studentName}</p>
@@ -195,9 +271,18 @@ useEffect(() => {
               </h1>
               <p className="text-muted-foreground mt-2">View your academic results and performance</p>
             </div>
-            <Button onClick={handleDownload} className="gradient-primary text-primary-foreground">
-              <Download className="w-4 h-4 mr-2" /> Download Marksheet
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => window.open(`/view_pdf/${studentResult.enrollment || currentEnrollment}`, '_blank')}
+                className="bg-background/80 hover:bg-background shadow-xs text-xs sm:text-sm"
+              >
+                <Eye className="w-4 h-4 mr-2" /> View Official Marksheet
+              </Button>
+              <Button onClick={handleDownload} className="gradient-primary text-primary-foreground text-xs sm:text-sm shadow-xs">
+                <Download className="w-4 h-4 mr-2" /> Download PDF Copy
+              </Button>
+            </div>
           </div>
         </div>
 

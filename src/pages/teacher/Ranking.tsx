@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { BRANCHES, SEMESTERS } from '@/data/mockData';
 import { Input } from '@/components/ui/input';
 import { 
@@ -37,29 +38,39 @@ interface RankingData {
 }
 
 const TeacherRanking: React.FC = () => {
+  const { user, activeCollege } = useAuth();
+  const collegeId = activeCollege?.id || 1;
+  const initialBranch = (user?.branch && user.role !== 'college_admin') ? user.branch : 'all';
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [branchFilter, setBranchFilter] = useState<string>('all');
+  const [branchFilter, setBranchFilter] = useState<string>(initialBranch);
   const [semesterFilter, setSemesterFilter] = useState<string>('all');
   const [dbRankings, setDbRankings] = useState<RankingData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchRankings = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch("http://127.0.0.1:5000/get_results");
+        const url = new URL("/get_results", window.location.origin);
+        if (collegeId) url.searchParams.append("college_id", String(collegeId));
+        if (branchFilter && branchFilter !== 'all') {
+          url.searchParams.append("branch", branchFilter);
+        }
+        const response = await fetch(url.toString());
         const data = await response.json();
         
-        const formatted = data.map((item: any) => ({
+        const formatted = Array.isArray(data) ? data.map((item: any) => ({
           enrollmentNumber: item.enroll,
           studentName: item.studentName,
           branch: item.branch,
-          semester: item.details?.semester || 4, 
+          semester: item.semester || item.details?.semester || 6, 
           percentage: item.percentage,
           cgpa: (item.percentage / 9.5).toFixed(2),
-        }));
+        })) : [];
 
         const sortedWithPermanentRank = formatted
-          .sort((a: any, b: any) => b.percentage - a.percentage)
+          .sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0))
           .map((student: any, index: number) => ({
             ...student,
             displayRank: index + 1 
@@ -73,7 +84,7 @@ const TeacherRanking: React.FC = () => {
       }
     };
     fetchRankings();
-  }, []);
+  }, [collegeId, branchFilter]);
 
   const filteredRankings = dbRankings.filter((ranking) => {
     const matchesSearch =

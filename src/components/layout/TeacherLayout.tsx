@@ -9,13 +9,15 @@ import {
   LogOut,
   GraduationCap,
   Menu,
-  X
+  X,
+  UserCheck,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
-const navItems = [
+const baseNavItems = [
   { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/teacher/results', icon: FileText, label: 'Results' },
   { to: '/teacher/ranking', icon: Trophy, label: 'Ranking' },
@@ -23,9 +25,14 @@ const navItems = [
 ];
 
 export const TeacherLayout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, activeCollege, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isHod = user?.role === 'hod' || (user as any)?.isHod;
+  const navItems = isHod 
+    ? [...baseNavItems, { to: '/teacher/approvals', icon: Users, label: 'Department Faculty' }]
+    : baseNavItems;
 
   const handleLogout = () => {
     logout();
@@ -37,15 +44,19 @@ export const TeacherLayout: React.FC = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-14 sm:h-16 items-center justify-between gap-2">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md">
-                <GraduationCap className="w-6 h-6 text-primary-foreground" />
+            <div className="flex items-center gap-2 sm:gap-3 cursor-pointer min-w-0" onClick={() => navigate('/')}>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md shrink-0">
+                <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="font-heading font-bold text-foreground">Somayya Polytechnic</h1>
-                <p className="text-xs text-muted-foreground">Result Automation System</p>
+              <div className="min-w-0">
+                <h1 className="font-heading font-bold text-foreground text-xs sm:text-base tracking-tight truncate max-w-[170px] sm:max-w-none">
+                  Result Automation
+                </h1>
+                <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
+                  Faculty & Department Portal {user?.branch ? `• ${user.branch}` : ''}
+                </p>
               </div>
             </div>
 
@@ -68,13 +79,24 @@ export const TeacherLayout: React.FC = () => {
                   {item.label}
                 </NavLink>
               ))}
+
+              {user?.role === 'college_admin' && (
+                <NavLink
+                  to="/admin/dashboard"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-secondary text-secondary-foreground shadow-xs hover:brightness-105 ml-2"
+                >
+                  Admin Portal
+                </NavLink>
+              )}
             </nav>
 
             {/* User Menu */}
             <div className="flex items-center gap-4">
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-medium text-foreground">{user?.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {user?.role === 'hod' ? 'Head of Dept (HOD)' : user?.role === 'college_admin' ? 'College Admin' : 'Faculty'}
+                </p>
               </div>
               <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-destructive">
                 <LogOut className="w-4 h-4" />

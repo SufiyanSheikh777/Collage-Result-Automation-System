@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { User, Mail, Hash, Loader2, Lock, Building } from 'lucide-react';
+import { User, Mail, Hash, Loader2, Lock, Building, Phone, School } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BRANCHES } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface College {
+  id: number;
+  name: string;
+}
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -17,31 +23,61 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onS
   const [activeTab, setActiveTab] = useState<'student' | 'teacher'>('student');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [branch, setBranch] = useState('');
   const [enrollmentNumber, setEnrollmentNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [selectedCollegeId, setSelectedCollegeId] = useState<string>('');
+  const { activeCollege } = useAuth();
+
+  useEffect(() => {
+    // Fetch available colleges so teacher can pick the right one
+    fetch('/api/colleges')
+      .then(r => r.json())
+      .then((data: College[]) => {
+        setColleges(data);
+        // Pre-select active college if available
+        if (activeCollege?.id) {
+          setSelectedCollegeId(String(activeCollege.id));
+        } else if (data.length > 0) {
+          setSelectedCollegeId(String(data[0].id));
+        }
+      })
+      .catch(() => {/* fail silently */});
+  }, [activeCollege]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      // For teacher: use explicitly selected college from the dropdown
+      // For student: use activeCollege or default 1
+      const collegeId = activeTab === 'teacher'
+        ? (selectedCollegeId ? Number(selectedCollegeId) : activeCollege?.id || 1)
+        : (activeCollege?.id || 1);
+
       // Create the payload based on whether it's a student or teacher
-      const payload = activeTab === 'teacher' 
-        ? { 
-            fullName: name, 
-            email: email, 
-            password: password, 
-            branch: branch 
-          } 
-        : { 
-            fullName: name, 
+      const payload = activeTab === 'teacher'
+        ? {
+            fullName: name,
+            email: email,
+            password: password,
+            branch: branch,
+            phone: phone,
+            collegeId: collegeId
+          }
+        : {
+            fullName: name,
             enrollmentNumber: enrollmentNumber,
-            branch: branch // Adding branch for students too as your DB supports it
+            branch: branch,
+            collegeId: collegeId
           };
 
-      const response = await fetch("http://127.0.0.1:5000/register", {
+      const response = await fetch("/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -50,7 +86,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onS
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Registration successful! You can now sign in.");
+        if (activeTab === 'teacher') {
+          toast.success(data.message || "Registration submitted! Your account is pending verification by your Department HOD or College Admin.", {
+            duration: 6000
+          });
+        } else {
+          toast.success("Student registration successful! You can now sign in.");
+        }
         onSuccess();
         onSwitchToLogin();
       } else {
@@ -126,6 +168,26 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onS
           </TabsContent>
 
           <TabsContent value="teacher" className="space-y-4 mt-0">
+            {/* College selector — critical so teacher appears in the correct admin portal */}
+            <div className="space-y-2">
+              <Label htmlFor="reg-teacher-college">Your College</Label>
+              <Select
+                value={selectedCollegeId}
+                onValueChange={setSelectedCollegeId}
+                required={activeTab === 'teacher'}
+              >
+                <SelectTrigger id="reg-teacher-college" className="pl-10 relative">
+                  <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <SelectValue placeholder="Select your college" />
+                </SelectTrigger>
+                <SelectContent>
+                  {colleges.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="reg-teacher-email">Official Email</Label>
               <div className="relative">
@@ -138,6 +200,21 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onS
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
                   required={activeTab === 'teacher'}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-teacher-phone">Mobile Number</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="reg-teacher-phone"
+                  type="tel"
+                  placeholder="Enter your 10-digit mobile number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="pl-10"
+                  maxLength={13}
                 />
               </div>
             </div>

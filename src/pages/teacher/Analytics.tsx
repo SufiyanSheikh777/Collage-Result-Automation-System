@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   BarChart, 
   Bar, 
@@ -23,6 +24,10 @@ import {
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#ec4899'];
 
 const TeacherAnalytics: React.FC = () => {
+  const { user, activeCollege } = useAuth();
+  const collegeId = activeCollege?.id || 1;
+  const branch = user?.branch && user.role !== 'college_admin' ? user.branch : '';
+
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState({
     passPercentage: 0,
@@ -38,7 +43,11 @@ const TeacherAnalytics: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/get_results");
+        const url = new URL("/get_results", window.location.origin);
+        if (collegeId) url.searchParams.append("college_id", String(collegeId));
+        if (branch) url.searchParams.append("branch", branch);
+
+        const response = await fetch(url.toString());
         const results = await response.json();
 
         if (results && results.length > 0) {
@@ -96,7 +105,7 @@ const TeacherAnalytics: React.FC = () => {
       }
     };
     fetchAnalytics();
-  }, []);
+  }, [collegeId, branch]);
 
   if (isLoading) {
     return (

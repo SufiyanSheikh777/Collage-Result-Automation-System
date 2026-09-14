@@ -39,33 +39,33 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-xl border p-6 shadow-card transition-all duration-300 hover:shadow-card-hover',
+        'relative overflow-hidden rounded-xl border p-4 sm:p-6 shadow-card transition-all duration-300 hover:shadow-card-hover',
         variantStyles[variant]
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-3xl font-heading font-bold text-foreground">{value}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5 sm:space-y-2 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</p>
+          <p className="text-2xl sm:text-3xl font-heading font-bold text-foreground">{value}</p>
           {subtitle && (
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">{subtitle}</p>
           )}
           {trend && (
             <div className="flex items-center gap-1">
               <span
                 className={cn(
-                  'text-sm font-medium',
+                  'text-xs sm:text-sm font-medium',
                   trend.isPositive ? 'text-success' : 'text-destructive'
                 )}
               >
                 {trend.isPositive ? '+' : ''}{trend.value}%
               </span>
-              <span className="text-xs text-muted-foreground">vs last sem</span>
+              <span className="text-[11px] sm:text-xs text-muted-foreground">vs last sem</span>
             </div>
           )}
         </div>
-        <div className={cn('p-3 rounded-xl', iconStyles[variant])}>
-          <Icon className="w-6 h-6" />
+        <div className={cn('p-2.5 sm:p-3 rounded-xl shrink-0', iconStyles[variant])}>
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
       </div>
     </div>
