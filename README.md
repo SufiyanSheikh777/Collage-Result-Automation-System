@@ -1,4 +1,4 @@
-# 🎓 Somaiya Result Automation System
+# 🎓 Collage Result Automation System
 
 An automated result management system for Somaiya Polytechnic that allows teachers to search, view, analyze, and manage student results without manually entering enrollment numbers or solving captchas. The system is designed to save time, improve accuracy, and provide useful analytics for academic performance.
 
